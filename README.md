@@ -24,10 +24,22 @@ Press a button and watch it animate: **Idle** (purple) -> **Running** (amber spi
 
 ## Install
 
-### From source
+### Via Claude Code (recommended)
+
+If you have [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed, just ask it:
+
+> "Clone https://github.com/Latent-Space-Labs/claude-stream-deck and set it up"
+
+Claude will read the `CLAUDE.md`, install dependencies, build the plugin, link it to your Stream Deck, and install the `/streamdeck` slash command. Then you can say things like:
+
+> "Run deploy on my stream deck"
+
+and Claude will trigger edit mode — tap a button to assign it.
+
+### Manual install
 
 ```bash
-# Install the Stream Deck CLI
+# Install the Stream Deck CLI (one-time)
 npm install -g @elgato/cli
 
 # Clone and build
@@ -41,6 +53,9 @@ npm run link
 
 # Restart the Stream Deck app (or restart just the plugin)
 npm run restart
+
+# Optional: install the /streamdeck Claude Code slash command
+ln -sf "$(pwd)/.claude/commands/streamdeck.md" ~/.claude/commands/streamdeck.md
 ```
 
 ## Usage
