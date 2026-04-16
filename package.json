@@ -1,0 +1,23 @@
+{
+  "name": "claude-stream-deck",
+  "version": "1.0.0",
+  "description": "Stream Deck plugin for running Claude Code skills with live button state feedback",
+  "type": "module",
+  "scripts": {
+    "build": "node esbuild.config.mjs",
+    "watch": "node esbuild.config.mjs --watch",
+    "link": "streamdeck link com.lsl.claude-runner.sdPlugin",
+    "restart": "streamdeck restart com.lsl.claude-runner",
+    "pack": "streamdeck pack com.lsl.claude-runner.sdPlugin",
+    "dev": "npm run build && npm run link && npm run restart"
+  },
+  "dependencies": {
+    "@elgato/streamdeck": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.5.0"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
+  "UUID": "com.lsl.claude-runner",
+  "Name": "Claude Runner",
+  "Author": "Latent Space Labs",
+  "Description": "Run Claude Code skills, shell scripts, and commands from your Stream Deck with live button state feedback.",
+  "Version": "1.0.0.0",
+  "CodePath": "bin/plugin.js",
+  "Icon": "imgs/plugin-icon",
+  "SDKVersion": 3,
+  "Software": { "MinimumVersion": "6.9" },
+  "OS": [
+    { "Platform": "mac", "MinimumVersion": "12" }
+  ],
+  "Nodejs": { "Version": "20", "Debug": "enabled" },
+  "Actions": [
+    {
+      "UUID": "com.lsl.claude-runner.run",
+      "Name": "Run Command",
+      "Icon": "imgs/actions/run/icon",
+      "Tooltip": "Run a shell script, Claude Code skill, or any command. Shows live status on the button.",
+      "PropertyInspectorPath": "ui/run-command.html",
+      "Controllers": ["Keypad"],
+      "DisableAutomaticStates": true,
+      "UserTitleEnabled": false,
+      "States": [
+        { "Image": "imgs/actions/run/idle", "Name": "Idle" },
+        { "Image": "imgs/actions/run/running", "Name": "Running" }
+      ]
+    }
+  ]
+}

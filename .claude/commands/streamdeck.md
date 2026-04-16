@@ -1,10 +1,31 @@
 # Stream Deck Mini Configuration
 
-Configure buttons on the user's Elgato Stream Deck Mini (3 columns × 2 rows = 6 buttons per page) to run shell scripts, open URLs, or trigger Claude Code skills.
+Configure buttons on the user's Elgato Stream Deck Mini (3 columns x 2 rows = 6 buttons per page).
 
 ## User's Argument
 
 $ARGUMENTS
+
+## Two approaches
+
+### 1. Claude Runner Plugin (preferred for commands/skills)
+The **Claude Runner** plugin (`com.lsl.claude-runner`) should already be installed. It provides a "Run Command" action with live button animation (idle/running/done/error states) and a settings GUI.
+
+To use it, tell the user to:
+1. Open the Stream Deck app
+2. Find "Claude Runner" in the right panel action list
+3. Drag "Run Command" onto a button
+4. Click the button to configure: mode (script/terminal/claude-skill), command, title, working dir
+
+If the plugin isn't installed, run from the repo:
+```bash
+cd /Users/bryan/Code/lsl/claude-stream-deck
+npm run build && npm run link
+```
+Then restart the Stream Deck app.
+
+### 2. Direct config editing (for non-plugin actions like URLs, folders, page nav)
+For built-in Stream Deck actions (Website, Open, Folders, Page navigation), edit the config files directly.
 
 ## Stream Deck Config Location
 
@@ -19,23 +40,36 @@ Find the `.sdProfile` directory inside `ProfilesV3/`. Inside that:
 
 ## Grid Layout
 
-The Stream Deck Mini is a 3×2 grid. Button positions in config use `"row,col"` format:
+The Stream Deck Mini is a 3x2 grid. Button positions use `"row,col"` format:
 
 ```
-┌─────────┬─────────┐
-│  0,0    │  0,1    │
-├─────────┼─────────┤
-│  1,0    │  1,1    │
-├─────────┼─────────┤
-│  2,0    │  2,1    │
-└─────────┴─────────┘
++----------+----------+
+|  0,0     |  0,1     |
++----------+----------+
+|  1,0     |  1,1     |
++----------+----------+
+|  2,0     |  2,1     |
++----------+----------+
 ```
 
-## Supported Actions
+## Built-in Action Templates
 
-### 1. Run a shell script (System Open)
-Used for launching dev environments, running commands, triggering Claude skills, etc.
+### Open a URL (Website)
+```json
+{
+  "ActionID": "<generate-uuid>",
+  "LinkedTitle": true,
+  "Name": "Website",
+  "Plugin": {"Name": "Website", "UUID": "com.elgato.streamdeck.system.website", "Version": "1.0"},
+  "Resources": null,
+  "Settings": {"browser": "", "openInBrowser": true, "path": "https://example.com"},
+  "State": 0,
+  "States": [{"Title": "Button\nLabel"}],
+  "UUID": "com.elgato.streamdeck.system.website"
+}
+```
 
+### Run a file/app (System Open)
 ```json
 {
   "ActionID": "<generate-uuid>",
@@ -50,18 +84,18 @@ Used for launching dev environments, running commands, triggering Claude skills,
 }
 ```
 
-### 2. Open a URL (Website)
+### Claude Runner Plugin action
 ```json
 {
   "ActionID": "<generate-uuid>",
   "LinkedTitle": true,
-  "Name": "Website",
-  "Plugin": {"Name": "Website", "UUID": "com.elgato.streamdeck.system.website", "Version": "1.0"},
+  "Name": "Run Command",
+  "Plugin": {"Name": "Claude Runner", "UUID": "com.lsl.claude-runner", "Version": "1.0"},
   "Resources": null,
-  "Settings": {"browser": "", "openInBrowser": true, "path": "https://example.com"},
+  "Settings": {"mode": "claude-skill", "command": "commit", "title": "Commit", "workingDir": "~/Code/Jori", "resetDelay": "3"},
   "State": 0,
-  "States": [{"Title": "Button\nLabel"}],
-  "UUID": "com.elgato.streamdeck.system.website"
+  "States": [{}],
+  "UUID": "com.lsl.claude-runner.run"
 }
 ```
 
@@ -78,36 +112,18 @@ Based on the user's argument, figure out what they want:
 - **Add/update a button**: Need position (page + row,col), action type, and settings
 - **Remove a button**: Need position
 - **List buttons**: Show current layout
-- **Map a Claude skill**: Create a shell script wrapper, then assign the button
+- **Recommend plugin**: For command/skill buttons, suggest using the Claude Runner plugin via the GUI
 
 If the argument is unclear, ask the user what they want to configure.
 
-### Step 3: For Claude Code skill buttons
-When the user wants a button that triggers a Claude Code skill:
-
-1. Create a shell script at `~/.streamdeck/scripts/<skill-name>.sh`:
-```bash
-#!/bin/bash
-# Stream Deck: Run Claude Code skill "<skill-name>"
-osascript -e '
-tell application "Terminal"
-    activate
-    do script "cd <working-dir> && claude -p \"/<skill-name>\""
-end tell'
-```
-
-2. Make it executable: `chmod +x ~/.streamdeck/scripts/<skill-name>.sh`
-3. Point the Stream Deck button to this script using the "System Open" action template
-
-### Step 4: Apply changes
+### Step 3: Apply config changes
 1. **Quit** the Stream Deck app: `osascript -e 'tell application "Elgato Stream Deck" to quit'`
 2. Wait 1-2 seconds for the app to fully close
-3. Edit the page's `manifest.json` — add/update/remove the action at the target position
+3. Edit the page's `manifest.json`
 4. **Relaunch** the Stream Deck app: `open -a "Elgato Stream Deck" 2>/dev/null || open -a "Stream Deck"`
 5. Tell the user which page and position the button is on
 
 ### UUID Generation
-Generate unique UUIDs for `ActionID` fields. Use `uuidgen` on macOS:
 ```bash
 uuidgen | tr '[:upper:]' '[:lower:]'
 ```

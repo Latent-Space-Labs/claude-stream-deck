@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Run Command</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 12px;
+      color: #ccc;
+      background: #2d2d2d;
+      margin: 0;
+      padding: 12px;
+    }
+    .sdpi-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .sdpi-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .sdpi-item label {
+      color: #9ca3af;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .sdpi-item input,
+    .sdpi-item select {
+      background: #1a1a1a;
+      border: 1px solid #444;
+      border-radius: 4px;
+      color: #fff;
+      padding: 6px 8px;
+      font-size: 12px;
+      outline: none;
+    }
+    .sdpi-item input:focus,
+    .sdpi-item select:focus {
+      border-color: #7c3aed;
+    }
+    .sdpi-item .hint {
+      color: #666;
+      font-size: 10px;
+      margin-top: 2px;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #444;
+      margin: 4px 0;
+    }
+    h3 {
+      color: #7c3aed;
+      font-size: 13px;
+      margin: 0;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="sdpi-wrapper">
+    <h3>Claude Runner</h3>
+
+    <div class="sdpi-item">
+      <label>Mode</label>
+      <select id="mode">
+        <option value="script">Run Script (tracks completion)</option>
+        <option value="terminal">Open in Terminal</option>
+        <option value="claude-skill">Claude Code Skill</option>
+      </select>
+      <div class="hint" id="mode-hint">Runs a shell command and shows success/error on the button.</div>
+    </div>
+
+    <hr />
+
+    <div class="sdpi-item">
+      <label id="command-label">Command</label>
+      <input type="text" id="command" placeholder="/path/to/script.sh" />
+      <div class="hint" id="command-hint">Full path to a shell script or command to run.</div>
+    </div>
+
+    <div class="sdpi-item">
+      <label>Button Title</label>
+      <input type="text" id="title" placeholder="My Skill" />
+      <div class="hint">Displayed on the button. Use \n for a second line.</div>
+    </div>
+
+    <div class="sdpi-item">
+      <label>Working Directory</label>
+      <input type="text" id="workingDir" placeholder="~/Code/my-project" />
+      <div class="hint">Directory to run the command in. Defaults to home.</div>
+    </div>
+
+    <div class="sdpi-item">
+      <label>Reset Delay (seconds)</label>
+      <input type="number" id="resetDelay" value="3" min="1" max="30" />
+      <div class="hint">How long to show Done/Error before resetting the button.</div>
+    </div>
+  </div>
+
+  <script>
+    const MODE_HINTS = {
+      script: "Runs a shell command and shows success/error on the button.",
+      terminal: "Opens a new Terminal tab and runs the command. Button shows 'Launched'.",
+      "claude-skill": "Opens Terminal and runs a Claude Code skill (e.g. 'commit' runs /commit).",
+    };
+    const COMMAND_LABELS = {
+      script: "Command",
+      terminal: "Command",
+      "claude-skill": "Skill Name",
+    };
+    const COMMAND_PLACEHOLDERS = {
+      script: "/path/to/script.sh",
+      terminal: "cd ~/Code && npm run dev",
+      "claude-skill": "commit",
+    };
+    const COMMAND_HINTS = {
+      script: "Full path to a shell script or command to run.",
+      terminal: "The command to run in a new Terminal tab.",
+      "claude-skill": "Just the skill name without the slash (e.g. 'commit', 'local-dev').",
+    };
+
+    let websocket = null;
+    let pluginUUID = null;
+    let settings = {};
+
+    function connectElgatoStreamDeckSocket(inPort, inPropertyInspectorUUID, inRegisterEvent, inInfo, inActionInfo) {
+      pluginUUID = inPropertyInspectorUUID;
+      const actionInfo = JSON.parse(inActionInfo);
+      settings = actionInfo.payload.settings || {};
+
+      websocket = new WebSocket(`ws://localhost:${inPort}`);
+      websocket.onopen = () => {
+        websocket.send(JSON.stringify({ event: inRegisterEvent, uuid: pluginUUID }));
+        loadSettings();
+      };
+      websocket.onmessage = (evt) => {
+        const data = JSON.parse(evt.data);
+        if (data.event === "didReceiveSettings") {
+          settings = data.payload.settings || {};
+          loadSettings();
+        }
+      };
+    }
+
+    function loadSettings() {
+      document.getElementById("mode").value = settings.mode || "script";
+      document.getElementById("command").value = settings.command || "";
+      document.getElementById("title").value = settings.title || "";
+      document.getElementById("workingDir").value = settings.workingDir || "";
+      document.getElementById("resetDelay").value = settings.resetDelay || "3";
+      updateModeUI();
+    }
+
+    function saveSettings() {
+      settings = {
+        mode: document.getElementById("mode").value,
+        command: document.getElementById("command").value,
+        title: document.getElementById("title").value,
+        workingDir: document.getElementById("workingDir").value,
+        resetDelay: document.getElementById("resetDelay").value,
+      };
+      if (websocket && websocket.readyState === WebSocket.OPEN) {
+        websocket.send(JSON.stringify({
+          event: "setSettings",
+          context: pluginUUID,
+          payload: settings,
+        }));
+      }
+    }
+
+    function updateModeUI() {
+      const mode = document.getElementById("mode").value;
+      document.getElementById("mode-hint").textContent = MODE_HINTS[mode];
+      document.getElementById("command-label").textContent = COMMAND_LABELS[mode];
+      document.getElementById("command").placeholder = COMMAND_PLACEHOLDERS[mode];
+      document.getElementById("command-hint").textContent = COMMAND_HINTS[mode];
+    }
+
+    document.querySelectorAll("input, select").forEach((el) => {
+      el.addEventListener("change", saveSettings);
+      el.addEventListener("input", saveSettings);
+    });
+
+    document.getElementById("mode").addEventListener("change", updateModeUI);
+  </script>
+</body>
+</html>

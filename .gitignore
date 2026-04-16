@@ -1,0 +1,4 @@
+node_modules/
+dist/
+com.lsl.claude-runner.sdPlugin/bin/
+*.streamDeckPlugin
